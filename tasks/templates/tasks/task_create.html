@@ -1,0 +1,100 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    /* Estilos personalizados para TomSelect */
+    .ts-control {
+        border: 2px solid #f1f5f9 !important; 
+        border-radius: 1rem !important; 
+        padding: 1rem !important;
+        font-family: inherit !important;
+        font-size: 1.125rem !important; 
+        font-weight: 700 !important; 
+        color: #334155 !important; 
+    }
+    .ts-wrapper.focus .ts-control {
+        border-color: #6366f1 !important; 
+        box-shadow: 0 0 0 4px #eef2ff !important; 
+    }
+    .ts-dropdown {
+        border-radius: 1rem !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid #f1f5f9 !important;
+        margin-top: 5px !important;
+        z-index: 1000 !important; /* Asegura que flote por encima */
+    }
+</style>
+
+<div class="max-w-3xl mx-auto py-12 px-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-100">
+        
+        {# CABECERA ESTILO PANEL - SE AGREGÓ 'overflow-hidden' AQUÍ PARA LOS CÍRCULOS #}
+        <div class="bg-indigo-600 p-8 relative overflow-hidden text-center rounded-t-[2rem]">
+            <div class="relative z-10">
+                <h2 class="text-3xl font-extrabold text-white">📋 Asignar Nueva Tarea</h2>
+                <p class="text-indigo-100 mt-2 text-base">Define los objetivos y el responsable de la actividad</p>
+            </div>
+            <div class="absolute top-0 left-0 -mt-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        </div>
+
+        <form method="POST" class="p-8 md:p-12 space-y-8">
+            {% csrf_token %}
+
+            {# TÍTULO #}
+            <div>
+                <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Título de la Tarea</label>
+                <input type="text" name="titulo" placeholder="Ej: Reporte de ventas mensual" required 
+                       class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-lg font-semibold text-slate-800">
+            </div>
+
+            {# DESCRIPCIÓN #}
+            <div>
+                <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Descripción / Instrucciones</label>
+                <textarea name="descripcion" rows="4" placeholder="Detalla los pasos a seguir para completar la tarea..."
+                          class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-base text-slate-600 leading-relaxed"></textarea>
+            </div>
+
+            {# GRID RESPONSABLE Y FECHA #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 relative z-50">
+                    <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Responsable</label>
+                    <select id="select-beast" name="asignado_a" required placeholder="Buscar nombre o ID..." autocomplete="off">
+                        <option value=""></option>
+                        {% for u in usuarios %}
+                            <option value="{{ u.user_id }}">{{ u.username }} (ID: {{ u.user_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Fecha Límite</label>
+                    <input type="datetime-local" name="fecha_limite" required
+                           class="w-full border-2 border-white p-4 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-base font-bold text-indigo-700 shadow-sm">
+                </div>
+            </div>
+
+            {# BOTONES DE ACCIÓN #}
+            <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 transform hover:-translate-y-1">
+                    Crear y Asignar Tarea
+                </button>
+                <a href="{% url 'tasks:tasks_list' %}" class="flex-1 bg-white text-slate-500 py-4 rounded-2xl font-bold text-center hover:bg-slate-50 transition-all border-2 border-slate-100">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    new TomSelect("#select-beast",{
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        }
+    });
+</script>
+{% endblock %}

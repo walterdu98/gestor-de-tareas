@@ -1,0 +1,255 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50/50 py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+        
+        {# CABECERA DE SECCIÓN #}
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
+            <div class="text-center sm:text-left">
+                <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">Gestión de Usuarios</h1>
+                <p class="text-slate-500 font-medium mt-1 text-lg">Administra los accesos y roles de tu equipo de trabajo</p>
+            </div>
+            <button onclick="openCreateModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-8 rounded-2xl shadow-xl shadow-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                </svg>
+                Nuevo Usuario
+            </button>
+        </div>
+
+        {# BARRA DE FILTROS MODERNA #}
+        <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 mb-10">
+            <div class="relative flex-grow">
+                <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-400">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="Buscar por nombre o ID..." 
+                    class="block w-full pl-14 pr-4 py-4 border-2 border-slate-50 rounded-2xl bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-700 font-semibold outline-none text-lg">
+            </div>
+
+            <div class="relative min-w-[260px]">
+                <select id="roleFilter" onchange="filterUsers()" 
+                    class="block w-full pl-6 pr-12 py-4 border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 rounded-2xl transition-all font-bold text-slate-600 cursor-pointer appearance-none outline-none text-lg">
+                    <option value="all">Todos los Roles</option>
+                    <option value="empleado">Empleados</option> 
+                    <option value="supervisor">Supervisores</option>
+                    <option value="jefe">Jefes</option>
+                    <option value="administrator">Administradores</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                </div>
+            </div>
+        </div>
+
+        {# CUADRÍCULA DE USUARIOS #}
+        <div id="userGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            {% for u in usuarios %}
+            <div class="user-card bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all p-8 flex flex-col items-center text-center"
+                 data-name="{{ u.username|lower }}" 
+                 data-id="{{ u.user_id }}"
+                 data-role="{% for ur in u.user_roles.all %}{{ ur.role.role_name|lower }} {% endfor %}">
+                
+                {# Avatar #}
+                <div class="w-24 h-24 bg-indigo-50 rounded-[2rem] mb-6 flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                    <img src="https://ui-avatars.com/api/?name={{ u.username }}&background=6366f1&color=fff&bold=true&size=128" alt="avatar" class="w-full h-full object-cover">
+                </div>
+
+                {# Info del Usuario #}
+                <div class="mb-6 w-full px-2">
+                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1">ID #{{ u.user_id }}</p>
+                    
+                    {# Cambiamos 'truncate' por 'break-words' y 'leading-tight' #}
+                    <h3 class="text-xl font-bold text-slate-800 leading-tight break-words">
+                        {{ u.username }}
+                    </h3>
+
+                    <div class="flex flex-wrap justify-center gap-2 mt-4">
+                        {% for ur in u.user_roles.all %}
+                            <span class="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">    
+                                {{ ur.role.role_name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-500 px-3 py-1 rounded-full border border-rose-100">Sin Rol</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Acciones según permisos definidos #}
+<div class="mt-auto w-full pt-6 border-t border-slate-50">
+    {% if user.is_superuser or max_perm >= 5 or max_perm == 6 %}
+        
+        {# REGLA 1: Evitar que alguien edite al Jefe o al Superusuario si no es superusuario #}
+        {% if u.is_superuser and not user.is_superuser or u.username == "Jefe" and not user.is_superuser %}
+            <span class="block text-slate-400 font-bold italic text-xs py-2 uppercase tracking-widest">Protegido</span>
+        
+        {# REGLA 2: Permiso 5 (Edita a todos menos a los protegidos de arriba) #}
+        {% elif max_perm == 5 %}
+            <button onclick="openEditModal('{{ u.user_id }}', '{{ u.username }}', '{% if u.user_roles.first %}{{ u.user_roles.first.role.id }}{% endif %}', '{% if u.supervisor_asignado %}{{ u.supervisor_asignado.supervisor.user_id }}{% endif %}')"
+                    class="w-full py-3 text-indigo-600 hover:bg-indigo-50 font-black rounded-xl text-sm transition-all border-2 border-transparent hover:border-indigo-100 uppercase tracking-tight">
+                Editar Perfil
+            </button>
+
+        {# REGLA 3: Permiso 6 (Supervisores editan CLIENTES/EMPLEADOS) #}
+        {% elif max_perm == 6 %}
+            {# Verificamos si el usuario de la tarjeta tiene rol de Empleado/Cliente para permitir edición #}
+            {% if "empleado" in u.user_roles.first.role.role_name|lower or "cliente" in u.user_roles.first.role.role_name|lower %}
+                <button onclick="openEditModal('{{ u.user_id }}', '{{ u.username }}', '{% if u.user_roles.first %}{{ u.user_roles.first.role.id }}{% endif %}', '{% if u.supervisor_asignado %}{{ u.supervisor_asignado.supervisor.user_id }}{% endif %}')"
+                        class="w-full py-3 text-indigo-600 hover:bg-indigo-50 font-black rounded-xl text-sm transition-all border-2 border-transparent hover:border-indigo-100 uppercase tracking-tight">
+                    Editar Perfil
+                </button>
+            {% else %}
+                <span class="block text-slate-400 font-bold italic text-xs py-2 uppercase tracking-widest">Protegido</span>
+            {% endif %}
+        
+        {% endif %}
+    {% endif %}
+</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{# MODAL DE USUARIO #}
+<div id="userModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50 p-4 transition-all">
+    <div class="relative top-10 mx-auto w-full max-w-lg shadow-2xl rounded-[2.5rem] bg-white overflow-hidden border border-white">
+        
+        <div class="bg-indigo-600 p-8 text-center relative">
+             <h3 class="text-2xl font-black text-white" id="modalTitle">Nuevo Usuario</h3>
+             <p class="text-indigo-100 text-sm mt-1">Ingresa los datos</p>
+        </div>
+        
+        <div class="p-8 md:p-10">
+            <form id="userForm" method="POST" action="{% url 'users:create_user' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-slate-500 text-xs font-black uppercase tracking-widest mb-2 ml-1">Nombre de Usuario</label>
+                    <input type="text" name="username" id="form_username" required 
+                           class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-slate-800 text-lg">
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                    <label class="block text-indigo-600 text-xs font-black uppercase tracking-widest mb-4 ml-1 text-center">Configurar Seguridad</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <input type="password" name="password" id="form_password" placeholder="Nueva clave"
+                               class="w-full border-2 border-white p-3 rounded-xl outline-none focus:border-indigo-500 transition-all font-bold shadow-sm">
+                        
+                        <input type="password" id="form_password_confirm" placeholder="Repetir clave"
+                               class="w-full border-2 border-white p-3 rounded-xl outline-none focus:border-indigo-500 transition-all font-bold shadow-sm">
+                    </div>
+                    <p id="password_error" class="text-[11px] text-rose-500 mt-2 hidden font-black text-center uppercase">⚠️ Las contraseñas no coinciden</p>
+                    <p class="text-[10px] text-slate-400 mt-4 font-bold text-center italic">Para editar: dejar vacío para mantener la actual.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-slate-500 text-xs font-black uppercase tracking-widest mb-2 ml-1">Rol</label>
+                        <select name="role" id="form_role" class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 font-bold text-slate-700 bg-white cursor-pointer">
+                            {% for r in roles %}
+                                {% if r.role_name != "Jefe" and r.role_name != "Admin" %}
+                                    <option value="{{ r.id }}">{{ r.role_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-orange-600 text-xs font-black uppercase tracking-widest mb-2 ml-1">Supervisor</label>
+                        <select name="supervisor" id="form_supervisor" class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 font-bold text-slate-700 bg-white cursor-pointer">
+                            <option value="">Ninguno</option>
+                            {% for s in supervisores %}
+                                <option value="{{ s.user_id }}">{{ s.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 mt-10">
+                    <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform hover:-translate-y-1">
+                        Guardar Usuario
+                    </button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterUsers() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const roleTerm = document.getElementById('roleFilter').value.toLowerCase();
+        const cards = document.getElementsByClassName('user-card');
+
+        for (let card of cards) {
+            const name = card.getAttribute('data-name');
+            const id = card.getAttribute('data-id').toLowerCase();
+            const role = card.getAttribute('data-role');
+
+            const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+            const matchesRole = (roleTerm === 'all') || role.includes(roleTerm);
+
+            if (matchesSearch && matchesRole) {
+                card.style.display = "flex";
+            } else {
+                card.style.display = "none";
+            }
+        }
+    }
+
+    // --- LÓGICA DEL MODAL ---
+    const modal = document.getElementById('userModal');
+    const form = document.getElementById('userForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const passInput = document.getElementById('form_password');
+    const passConfirm = document.getElementById('form_password_confirm');
+    const passError = document.getElementById('password_error');
+
+    form.onsubmit = function(e) {
+        if (passInput.value !== passConfirm.value) {
+            e.preventDefault();
+            passError.classList.remove('hidden');
+            passInput.classList.add('border-rose-500');
+            passConfirm.classList.add('border-rose-500');
+            return false;
+        }
+    };
+
+    function openCreateModal() {
+        form.action = "{% url 'users:create_user' %}";
+        modalTitle.innerText = "Crear Nuevo Usuario";
+        form.reset();
+        passError.classList.add('hidden');
+        passInput.required = true;
+        passConfirm.required = true;
+        modal.classList.remove('hidden');
+    }
+
+    function openEditModal(id, username, roleId, supervisorId) {
+        form.action = `/users/save/${id}/`;
+        modalTitle.innerText = `Editando a: ${username}`;
+        document.getElementById('form_username').value = username;
+        document.getElementById('form_role').value = roleId || "";
+        document.getElementById('form_supervisor').value = supervisorId || "";
+        passInput.value = "";
+        passConfirm.value = "";
+        passError.classList.add('hidden');
+        passInput.required = false;
+        passConfirm.required = false;
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) closeModal();
+    }
+</script>
+{% endblock %}

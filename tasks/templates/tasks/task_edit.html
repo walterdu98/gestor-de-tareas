@@ -1,0 +1,80 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden">
+        
+        <div class="bg-slate-800 p-8 relative overflow-hidden text-center">
+            <div class="relative z-10">
+                <h2 class="text-3xl font-extrabold text-white">
+                    {% if tarea.reabierta %}
+                        🔄 Reabriendo Tarea
+                    {% else %}
+                        ✏️ Editando Tarea
+                    {% endif %}
+                </h2>
+                <div class="text-slate-300 mt-3 flex flex-col items-center justify-center gap-2 sm:flex-row">
+                    <span class="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-mono font-bold">
+                        ID #{{ tarea.id }}
+                    </span>
+                    <p class="text-sm">
+                        {% if tarea.reabierta %}
+                            Tarea cerrada. Al guardar volverá a estar **Pendiente**.
+                        {% else %}
+                            Modificando los detalles del registro actual.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-indigo-500 opacity-10 rounded-full"></div>
+        </div>
+
+        <form method="POST" class="p-8 md:p-12 space-y-8">
+            {% csrf_token %}
+
+            {# TÍTULO #}
+            <div>
+                <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Título de la Tarea</label>
+                <input type="text" name="titulo" value="{{ tarea.titulo }}" required
+                       class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-lg font-semibold text-slate-800"
+                       placeholder="Ej: Reporte Mensual de Ventas">
+            </div>
+
+            {# DESCRIPCIÓN #}
+            <div>
+                <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Descripción Detallada</label>
+                <textarea name="description" rows="5"
+                          class="w-full border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-base text-slate-600 leading-relaxed"
+                          placeholder="Escribe aquí los detalles de la actividad...">{{ tarea.descripcion }}</textarea>
+            </div>
+
+            {# FECHA LÍMITE #}
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <label class="block text-sm font-black text-slate-500 uppercase tracking-wider mb-3 ml-1">Fecha Límite de Entrega</label>
+                <div class="relative">
+                    <input type="datetime-local" name="fecha_limite"
+                           value="{{ tarea.fecha_limite|date:'Y-m-d\TH:i' }}"
+                           class="w-full border-2 border-white p-4 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all text-base font-bold text-indigo-700 shadow-sm">
+                </div>
+                <p class="text-xs text-slate-400 mt-3 flex items-center gap-1.5 ml-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Asegúrate de asignar un tiempo prudente para la revisión.
+                </p>
+            </div>
+
+            {# BOTONES DE ACCIÓN #}
+            <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 transform hover:-translate-y-1">
+                    Guardar Cambios
+                </button>
+                <a href="{% url 'tasks:tasks_list' %}" class="flex-1 bg-white text-slate-500 py-4 rounded-2xl font-bold text-center hover:bg-slate-50 transition-all border-2 border-slate-100">
+                    Cancelar
+                </a>
+            </div>
+            
+        </form>
+    </div>
+</div>
+{% endblock %}

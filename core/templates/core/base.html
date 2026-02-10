@@ -1,0 +1,237 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestor de Tiempos{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-in { animation: fadeInRight 0.4s ease-out forwards; }
+        .mobile-menu-open { overflow: hidden; }
+        
+        /* Scrollbar fina para las notificaciones */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen flex flex-col text-slate-900">
+    
+    <nav class="bg-slate-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-3 h-16 items-center">
+                
+                <div class="flex justify-start">
+                    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-xl hover:bg-white/10 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+
+                    <a href="{% url 'core:dashboard' %}" 
+                       class="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-all border border-white/5 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-300 group-hover:scale-110 transition-transform">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        <span class="text-sm font-bold tracking-wide">Inicio</span>
+                    </a>
+                </div>
+
+                <div class="flex justify-center items-center gap-3">
+                    <div class="bg-white/90 p-1 rounded-lg border border-white shadow-sm transition-transform hover:scale-105">
+                        <img src="{% static 'img/Screenshot_4.png' %}" alt="Logo" class="h-9 w-9 object-contain">
+                    </div>
+                    <h1 class="text-lg md:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent hidden sm:block text-center">
+                        Gestor de Tiempos y Tareas
+                    </h1>
+                </div>
+
+                <div class="flex justify-end items-center">
+                    {# SECCIÓN DE NOTIFICACIONES DESPLEGABLE #}
+                    {% if user.is_authenticated %}
+                    <div class="relative mr-4">
+                        <button id="notif-button" class="block p-2 text-indigo-300 hover:bg-white/10 rounded-xl transition-colors focus:outline-none relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            
+                            {# Punto rojo #}
+                            {% for noti in user.notificaciones.all %}
+                                {% if not noti.leido and forloop.first %}
+                                    <span class="absolute top-1.5 right-1.5 flex h-3 w-3">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        </button>
+
+                        {# Dropdown de Notificaciones con Límite y Scroll #}
+                        <div id="notif-dropdown" class="absolute right-0 mt-3 w-72 md:w-80 bg-white text-slate-800 rounded-2xl shadow-2xl py-2 z-50 hidden border border-slate-100 ring-1 ring-black/5">
+                            <div class="px-4 py-3 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Notificaciones</p>
+                            </div>
+                            
+                            {# Límite de altura: 350px permite ver unas 4-5 tareas antes de scrollear #}
+                            <div class="max-h-[350px] overflow-y-auto custom-scroll">
+                                {% for noti in user.notificaciones.all %}
+                                    <a href="{% url 'tasks:marcar_leida' noti.id %}" 
+                                       class="block px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors {% if not noti.leido %}bg-indigo-50/40{% endif %}">
+                                        <p class="text-sm font-medium text-slate-700 leading-snug">{{ noti.mensaje }}</p>
+                                        <p class="text-[10px] text-slate-400 mt-1 font-bold italic">{{ noti.creada_en|timesince }} atrás</p>
+                                    </a>
+                                {% empty %}
+                                    <div class="px-4 py-8 text-center">
+                                        <p class="text-sm text-slate-400 font-medium">No tienes notificaciones</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="relative">
+                        <button id="user-menu-button"
+                            class="flex items-center space-x-3 bg-white/5 hover:bg-white/10 py-1.5 px-3 rounded-xl transition-all border border-white/10 focus:outline-none">
+                            
+                            <div class="flex flex-col items-end leading-none hidden md:flex">
+                                <span class="text-[17px] font-black uppercase text-indigo-300 tracking-tighter mb-0.5">ID #{{ user.user_id }}</span>
+                                <span class="text-sm font-bold tracking-wide">{{ user.username|title }}</span>
+                            </div>
+
+                            <div class="bg-indigo-500 p-1 rounded-lg shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                        </button>
+
+                        <div id="user-menu-dropdown"
+                            class="absolute right-0 mt-3 w-56 bg-white text-slate-800 rounded-2xl shadow-2xl py-2 z-50 hidden border border-slate-100 ring-1 ring-black/5">
+                            <div class="px-4 py-3 border-b border-slate-50">
+                                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Sesión activa</p>
+                                <p class="text-sm font-bold truncate text-indigo-600">{{ user.email|default:user.username }}</p>
+                            </div>
+                            <div class="p-1">
+                                <a href="{% url 'users:logout' %}" class="flex items-center px-4 py-3 hover:bg-red-50 text-red-600 font-bold text-sm transition-colors rounded-xl group">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-3 group-hover:translate-x-1 transition-transform">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                                    </svg>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Sidebar Móvil #}
+        <div id="mobile-sidebar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden md:hidden">
+            <div class="bg-slate-700 w-64 h-full p-6 shadow-2xl animate-fade-in">
+                <div class="flex justify-between items-center mb-10">
+                    <span class="font-bold text-indigo-300">Menú</span>
+                    <button id="close-menu" class="text-white hover:text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <nav class="space-y-4">
+                    <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                        🏠 <span class="font-bold text-white">Inicio</span>
+                    </a>
+                    <hr class="border-white/10">
+                    <a href="{% url 'users:logout' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors">
+                        🚪 <span class="font-bold">Cerrar Sesión</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </nav>
+
+    {% if messages %}
+    <div id="messages-container" class="fixed top-20 right-6 z-[60] space-y-3 max-w-sm">
+        {% for message in messages %}
+        <div class="p-4 rounded-2xl shadow-2xl border-l-4 flex justify-between items-center bg-white animate-fade-in
+            {% if message.tags == 'success' %} border-green-500 {% else %} border-red-500 {% endif %}">
+            <div class="flex items-center gap-3 text-slate-800">
+                <span class="text-xl">{% if message.tags == 'success' %}✅{% else %}⚠️{% endif %}</span>
+                <span class="text-sm font-bold">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="ml-4 text-slate-300 hover:text-slate-500 transition-colors">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="flex-grow p-4 md:p-6 lg:p-8">
+        {% block content %}{% endblock content %}
+    </main>
+
+    <footer class="py-6 text-center text-slate-400 text-[10px] uppercase tracking-widest bg-slate-100">
+        &copy; 2026 Gestor de Tiempos y Tareas
+    </footer>
+
+    <script>
+        const userBtn = document.getElementById('user-menu-button');
+        const userDropdown = document.getElementById('user-menu-dropdown');
+        const notifBtn = document.getElementById('notif-button');
+        const notifDropdown = document.getElementById('notif-dropdown');
+
+        if(userBtn && userDropdown) {
+            userBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+                if(notifDropdown) notifDropdown.classList.add('hidden');
+            });
+        }
+
+        if(notifBtn && notifDropdown) {
+            notifBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notifDropdown.classList.toggle('hidden');
+                if(userDropdown) userDropdown.classList.add('hidden');
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if(userDropdown) userDropdown.classList.add('hidden');
+            if(notifDropdown) notifDropdown.classList.add('hidden');
+        });
+
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const closeMenu = document.getElementById('close-menu');
+        if(mobileBtn && mobileSidebar && closeMenu) {
+            mobileBtn.onclick = () => {
+                mobileSidebar.classList.remove('hidden');
+                document.body.classList.add('mobile-menu-open');
+            };
+            closeMenu.onclick = () => {
+                mobileSidebar.classList.add('hidden');
+                document.body.classList.remove('mobile-menu-open');
+            };
+        }
+
+        const container = document.getElementById('messages-container');
+        if (container) {
+            setTimeout(() => {
+                const messages = container.querySelectorAll('div');
+                messages.forEach(msg => {
+                    msg.style.opacity = '0';
+                    msg.style.transform = 'translateX(50px)';
+                    msg.style.transition = 'all 0.5s ease';
+                    setTimeout(() => msg.remove(), 500);
+                });
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

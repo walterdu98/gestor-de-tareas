@@ -1,0 +1,162 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-10">
+        
+        {# CABECERA DEL PANEL #}
+        <div class="mb-10 border-b border-slate-100 pb-6">
+            <h2 class="text-3xl font-extrabold text-slate-800">Panel de Control</h2>
+            <p class="text-slate-500 mt-2 text-base italic">
+                Identificado como: <strong class="text-indigo-600">{% if roles %}{{ roles|join:", " }}{% else %}Sin Rol{% endif %}</strong>
+            </p>
+        </div>
+
+        {# SECCIÓN DE ACCESOS DIRECTOS #}
+        <div class="flex flex-wrap justify-center gap-6 mb-16">
+            {% if permissions.tareas_empleados > 0 or permissions.tareas_supervisor > 0 %}
+            <a href="{% url 'tasks:tasks_list' %}"
+               class="w-full sm:w-64 bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:shadow-xl transition-all transform hover:-translate-y-1 border-t-4 border-indigo-500 flex flex-col items-center text-center group">
+                <div class="bg-indigo-100 p-4 rounded-full mb-3 group-hover:bg-indigo-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Tareas</h3>
+                <p class="text-slate-500 text-sm mt-2">Gestión y revisión de actividades</p>
+            </a>
+            {% endif %}
+
+            {% if permissions.modificar_usuarios == 5 or permissions.modificar_usuarios == 6 %}
+            <a href="{% url 'users:user_management' %}"
+               class="w-full sm:w-64 bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:shadow-xl transition-all transform hover:-translate-y-1 border-t-4 border-blue-500 flex flex-col items-center text-center group">
+                <div class="bg-blue-100 p-4 rounded-full mb-3 group-hover:bg-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Usuarios</h3>
+                <p class="text-slate-500 text-sm mt-2">{% if permissions.modificar_usuarios == 5 %}Todo el personal{% else %}Empleados asignados{% endif %}</p>
+            </a>
+            {% endif %}
+
+            {% if permissions.estadisticas == 4 %}
+            <a href="{% url 'stats:view_stats' %}"
+               class="w-full sm:w-64 bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:shadow-xl transition-all transform hover:-translate-y-1 border-t-4 border-emerald-500 flex flex-col items-center text-center group">
+                <div class="bg-emerald-100 p-4 rounded-full mb-3 group-hover:bg-emerald-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-600 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Estadísticas</h3>
+                <p class="text-slate-500 text-sm mt-2">Reportes de rendimiento</p>
+            </a>
+            {% endif %}
+        </div>
+
+        {# SECCIÓN DE TAREAS RECIENTES #}
+        <div class="mt-8">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-2xl font-extrabold text-slate-800 flex items-center gap-3">
+                    <span class="w-2.5 h-10 bg-indigo-600 rounded-full"></span>
+                    Tareas Recientes
+                </h3>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-6">
+                {% for tarea in tareas_recientes %}
+                <a href="{% url 'tasks:tasks_list' %}?nombre={{ tarea.id }}" 
+                   class="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.33%-1.5rem)] xl:w-[calc(25%-1.5rem)] bg-white border border-slate-200 rounded-2xl p-5 transition-all hover:shadow-xl hover:border-indigo-300 flex flex-col relative overflow-hidden border-l-[6px] 
+                   {% if tarea.estado == 'FINALIZADA' %} border-l-green-500 
+                   {% elif tarea.esta_vencida %} border-l-yellow-400 
+                   {% elif tarea.estado == 'NO_COMPLETADA' %} border-l-red-500 
+                   {% else %} border-l-slate-300 {% endif %}">
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-sm font-mono text-slate-400 font-black">#{{ tarea.id }}</span>
+                        <div class="flex flex-col items-end gap-1.5">
+                            <span class="text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider
+                                {% if tarea.estado == 'NO_COMPLETADA' %} bg-red-100 text-red-700
+                                {% elif tarea.estado == 'FINALIZADA' %} bg-green-100 text-green-700
+                                {% elif tarea.estado == 'PENDIENTE_REVISION' %} bg-amber-100 text-amber-700
+                                {% else %} bg-blue-100 text-blue-700 {% endif %}">
+                                {{ tarea.get_estado_display }}
+                            </span>
+                            
+                            {% if tarea.esta_vencida and tarea.estado != 'FINALIZADA' %}
+                            <span class="text-[10px] font-black px-2 py-1 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded shadow-sm uppercase">
+                                ⚠️ TIEMPO EXCEDIDO
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h4 class="text-lg font-bold text-slate-800 truncate group-hover:text-indigo-600 mb-2">{{ tarea.titulo }}</h4>
+                    <p class="text-sm text-slate-600 line-clamp-2 mb-6 min-h-[40px] leading-relaxed">{{ tarea.descripcion }}</p>
+
+                    <div class="mt-auto space-y-3">
+                        <div class="flex justify-between text-xs text-slate-500 border-t border-slate-100 pt-3">
+                            <span>De: <strong class="text-slate-700">{{ tarea.creada_por.username }}</strong></span>
+                            <span>Para: <strong class="text-indigo-600 font-bold">{{ tarea.asignado_a.username }}</strong></span>
+                        </div>
+                        
+                        <div id="dash-timer-{{ tarea.id }}" 
+                             class="text-sm font-mono font-black text-center py-2.5 rounded-xl bg-slate-50 text-slate-800 border border-slate-200 shadow-inner"
+                             data-deadline="{{ tarea.fecha_limite|date:'Y-m-d H:i:s' }}"
+                             data-status="{{ tarea.estado }}">
+                             --:--:--
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="w-full py-16 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <p class="text-slate-400 text-lg italic font-medium">No hay tareas activas asignadas.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateTimers() {
+        const timers = document.querySelectorAll('[id^="dash-timer-"]');
+        timers.forEach(timer => {
+            const status = timer.getAttribute('data-status');
+            
+            if (status === 'FINALIZADA') {
+                timer.innerHTML = "COMPLETADA";
+                timer.className = "text-sm font-mono font-black text-center py-2.5 rounded-xl bg-green-50 text-green-700 border border-green-200 shadow-sm";
+                return;
+            }
+
+            if (status === 'NO_COMPLETADA') {
+                timer.innerHTML = "PROCESADA";
+                timer.className = "text-sm font-mono font-black text-center py-2.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 shadow-sm";
+                return;
+            }
+
+            const deadlineStr = timer.getAttribute('data-deadline').replace(/-/g, "/");
+            const deadline = new Date(deadlineStr).getTime();
+            const now = new Date().getTime();
+            const distance = deadline - now;
+
+            if (distance < 0) {
+                timer.innerHTML = "⚠️ TIEMPO EXCEDIDO";
+                timer.className = "text-sm font-mono font-black text-center py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 animate-pulse";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timer.className = "text-sm font-mono font-black text-center py-2.5 rounded-xl bg-slate-50 text-slate-800 border border-slate-200 shadow-inner";
+            timer.innerHTML = (days > 0 ? days + "d " : "") + 
+                             hours.toString().padStart(2, '0') + ":" + 
+                             minutes.toString().padStart(2, '0') + ":" + 
+                             seconds.toString().padStart(2, '0');
+        });
+    }
+    setInterval(updateTimers, 1000);
+    updateTimers();
+</script>
+{% endblock %}

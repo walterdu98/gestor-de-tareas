@@ -1,0 +1,156 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Panel de Estadísticas</h2>
+                <p class="text-gray-500 text-sm">Visualización de rendimiento y tareas</p>
+            </div>
+
+            <form method="GET" class="flex flex-wrap gap-2">
+                <select name="estado" onchange="this.form.submit()"
+                        class="bg-gray-50 border-none text-gray-700 py-2 px-4 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Todos los Estados</option>
+                    <option value="PENDIENTE" {% if request.GET.estado == 'PENDIENTE' %}selected{% endif %}>Pendientes</option>
+                    <option value="FINALIZADA" {% if request.GET.estado == 'FINALIZADA' %}selected{% endif %}>Completadas</option>
+                    <option value="NO_COMPLETADA" {% if request.GET.estado == 'NO_COMPLETADA' %}selected{% endif %}>No Completadas</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-indigo-600 p-6 rounded-3xl shadow-lg shadow-indigo-100 text-white">
+                    <p class="opacity-80 text-sm font-medium">Total de Tareas</p>
+                    <p class="text-4xl font-black mt-1">{{ total }}</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <p class="text-gray-500 text-sm font-medium">Completadas</p>
+                    <p class="text-4xl font-black text-green-500 mt-1">{{ completadas }}</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <p class="text-gray-500 text-sm font-medium">Pendientes</p>
+                    <p class="text-4xl font-black text-yellow-500 mt-1">{{ pendientes }}</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <p class="text-gray-500 text-sm font-medium">No Completadas</p>
+                    <p class="text-4xl font-black text-red-500 mt-1">{{ no_completadas }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                <h3 class="text-gray-700 font-bold mb-4">Distribución</h3>
+                <div class="w-full max-w-[250px]">
+                    <canvas id="taskChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-50">
+                <h3 class="text-lg font-bold text-gray-800">Rendimiento por Tareas Asignadas</h3>
+            </div>
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Supervisor</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase text-center">Tareas Asignadas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for s in stats_supervisores %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-gray-700">{{ s.creada_por__username }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-sm font-bold">{{ s.total }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <h3 class="text-lg font-bold text-gray-800 whitespace-nowrap">Estado Detallado de Usuarios</h3>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                            </svg>
+                        </span>
+                        <input type="text" id="userSearch" placeholder="Buscar por nombre..."
+                               class="pl-10 w-full bg-gray-50 border-none text-sm text-gray-700 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="estado" value="{{ request.GET.estado }}">
+                    <select name="tipo_usuario" onchange="this.form.submit()"
+                            class="bg-gray-100 border-none text-sm text-gray-700 py-1.5 px-4 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos los Roles</option>
+                        <option value="supervisor" {% if request.GET.tipo_usuario == 'supervisor' %}selected{% endif %}>Solo Supervisores</option>
+                        <option value="empleado" {% if request.GET.tipo_usuario == 'empleado' %}selected{% endif %}>Solo Empleados</option>
+                    </select>
+                </form>
+            </div>
+
+            <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <table class="w-full text-left" id="detailedTable">
+                    <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase tracking-wider sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-4 bg-gray-50">Usuario</th>
+                            <th class="px-6 py-4 text-center bg-gray-50">Completadas</th>
+                            <th class="px-6 py-4 text-center bg-gray-50">Pendientes</th>
+                            <th class="px-6 py-4 text-center bg-gray-50">No Completadas</th>
+                            <th class="px-6 py-4 text-center bg-gray-50">Efectividad</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for u in usuarios_stats %}
+                        {% if u.t_total > 0 %}
+                        <tr class="user-row hover:bg-gray-50 transition-colors text-sm">
+                            <td class="px-6 py-4 font-bold text-gray-700 username-cell">{{ u.username }}</td>
+                            <td class="px-6 py-4 text-center text-green-600 font-bold">{{ u.t_completadas }}</td>
+                            <td class="px-6 py-4 text-center text-yellow-600 font-bold">{{ u.t_pendientes }}</td>
+                            <td class="px-6 py-4 text-center text-red-600 font-bold">{{ u.t_no_completadas }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-full bg-gray-100 rounded-full h-1.5 max-w-[60px]">
+                                        {% widthratio u.t_completadas u.t_total 100 as porcentaje %}
+                                        <div class="bg-indigo-500 h-1.5 rounded-full"
+                                             style="--width-percent: {{ porcentaje }}%; width: var(--width-percent);">
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400">{{ porcentaje }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script id="stats-data" type="application/json">
+    {
+        "completadas": {{ completadas|default:0 }},
+        "pendientes": {{ pendientes|default:0 }},
+        "no_completadas": {{ no_completadas|default:0 }}
+    }
+</script>
+
+{% load static %}
+<script src="{% static 'js/graficoscript.js' %}"></script>
+{% endblock %}
