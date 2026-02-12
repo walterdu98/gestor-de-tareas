@@ -102,7 +102,6 @@ def task_create(request):
                 estado='PENDIENTE'
             )
 
-            # Link idéntico a la lógica del Dashboard para filtrado por ID
             url_filtrada = reverse('tasks:tasks_list') + f"?nombre={nueva_tarea.id}"
 
             Notificacion.objects.create(
@@ -139,10 +138,7 @@ def task_edit(request, task_id):
     if request.method == 'POST':
         try:
             task.titulo = request.POST.get('titulo')
-            
-            # SOLUCIÓN DEFINITIVA: 
-            # Intentamos leer 'descripcion' (español) y si no, 'description' (inglés)
-            # Esto evita que el campo se guarde como NULL y dé error.
+
             desc_form = request.POST.get('descripcion') or request.POST.get('description')
             
             if desc_form:
@@ -254,7 +250,6 @@ def marcar_notificacion_leida(request, notif_id):
     notificacion.leido = True
     notificacion.save()
     
-    # Si el link es "/tasks/?nombre=45", redirigimos a ese string exacto
     if notificacion.link:
         return redirect(notificacion.link)
     

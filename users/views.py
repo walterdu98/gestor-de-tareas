@@ -94,8 +94,7 @@ def save_user_action(request, user_id=None):
                 if target != request.user:
                     if permiso == 6 and not es_admin and target.is_superuser:
                         raise ValueError("Como Jefe no puedes editar al Administrador.")
-                    if es_admin and obtener_permiso_maximo(target) == 6:
-                        raise ValueError("Como Admin no puedes editar al Jefe.")
+                    
 
                 target.username = username
 

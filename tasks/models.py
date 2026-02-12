@@ -70,7 +70,6 @@ class Notificacion(models.Model):
     )
     tarea = models.ForeignKey('Task', on_delete=models.CASCADE)
     mensaje = models.CharField(max_length=255)
-    # Almacena el link con el parámetro ?nombre=ID
     link = models.CharField(max_length=255, null=True, blank=True) 
     leido = models.BooleanField(default=False)
     creada_en = models.DateTimeField(auto_now_add=True)
