@@ -236,11 +236,13 @@ def task_delete(request, task_id):
     if request.method == 'POST':
         tarea = get_object_or_404(Task, id=task_id)
         permiso = get_task_permission(request.user)
-        if permiso < 3 or (permiso == 3 and tarea.asignado_a != request.user):
+
+        if request.user.is_superuser or permiso in [5, 6, 7]:
             tarea.delete()
             messages.success(request, f"✅ Tarea #{task_id} eliminada.")
         else:
-            messages.error(request, "❌ No tienes permisos.")
+            messages.error(request, "❌ No tienes permisos para eliminar tareas.")
+            
     return redirect('tasks:tasks_list')
 
 @login_required
